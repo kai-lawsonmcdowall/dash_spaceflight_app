@@ -9,11 +9,17 @@ import pandas as pd
 
 
 # %%
-# ran sed -E 's/^[0-9]+,[0-9]+,//' /home/kai/dash/mission_launches.csv > /home/kai/dash/mission_launches_cleaned.csv to clean data.
-mission_launches = pd.read_csv("mission_launches_cleaned.csv")
+"""Data Analysis"""
 
+mission_launches = pd.read_csv("mission_launches_cleaned.csv")
+long_and_lat = pd.read_csv("/home/kai/dash_spaceflight_app/launch_long_and_lat.csv")
+long_and_lat
 # %%
-mission_launches
+missions_with_coordinates = pd.merge(
+    mission_launches, long_and_lat, on="Location", how="left"
+)
+missions_with_coordinates
+
 
 # %%
 # text
@@ -91,8 +97,3 @@ app.layout = html.Div(
 
 if __name__ == "__main__":
     app.run_server()
-
-# %%
-mission_launches
-# %%
-unique_organisations = set(list(mission_launches["Organisation"]))
