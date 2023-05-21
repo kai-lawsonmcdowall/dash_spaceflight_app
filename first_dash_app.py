@@ -10,24 +10,55 @@ import pandas as pd
 
 # %%
 """Data Analysis"""
+import os
+app_dir = os.path.realpath(__file__)
 
+# importing mission launches and coordinates
 mission_launches = pd.read_csv("mission_launches_cleaned.csv")
-long_and_lat = pd.read_csv("/home/kai/dash_spaceflight_app/launch_long_and_lat.csv")
-long_and_lat
+long_and_lat = pd.read_csv("launch_long_and_lat.csv")
 # %%
+# merging the data
 missions_with_coordinates = pd.merge(
     mission_launches, long_and_lat, on="Location", how="left"
 )
-missions_with_coordinates
+missions_with_coordinates.dropna(inplace=True)
+
+#%%
+# mapping this to a world mpa
+import folium
+from folium.plugins import MarkerCluster
+import pandas as pd
+
+# Create the map
+map = folium.Map(zoom_start=2, tiles='cartodbpositron')
+marker_cluster = MarkerCluster().add_to(map)
+
+# Iterate over the DataFrame rows
+for index, row in missions_with_coordinates.iterrows():
+    location = [row['Latitude'], row['Longitude']]
+    popup = row['Location']
+
+    # Create a marker for each location
+    folium.Marker(
+        location=location,
+        popup=popup,
+        icon=folium.Icon(color="black", icon="fa-thin fa-shuttle-space fa-rotate-270", prefix="fa"),
+        rotation=-90
+    ).add_to(marker_cluster)
+
+#rotating the folium icon 90 degrees to the left.
+map
+# Convert the Folium map to HTML
+folium_map_html = map._repr_html_()
+#%%
+
 
 
 # %%
 # text
 header_text = "Visualization of rocket launch data 🚀"
 
-
 # dropdown options:
-
 org_options = [
     {"label": "please select an organization", "value": "org_default"},
     {"label": "SpaceX"},
@@ -81,12 +112,7 @@ app.layout = html.Div(
                 "font-family": "Roboto, sans-serif",
             },
         ),
-        dcc.Graph(
-            id="bar_plot",
-            figure=go.Figure(
-                layout=dict(template="plotly_dark"),
-            ),
-        ),
+        html.Iframe(srcDoc=folium_map_html, style={'height': '500px', 'width': '100%'})
     ],
     style={
         "background-image": 'url("/assets/nightsky.jpg")',
@@ -97,3 +123,4 @@ app.layout = html.Div(
 
 if __name__ == "__main__":
     app.run_server()
+#%%
