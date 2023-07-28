@@ -11,3 +11,9 @@
 .Select-value-label {
     color: white !important;
 }
+/* Custom CSS for dcc.RangeSlider */
+.custom-range-slider .rc-slider-mark-text,
+.custom-range-slider .rc-slider-tooltip-inner {
+    font-size: 18px !important;
+    color: white;
+}

@@ -1,5 +1,4 @@
 # %%
-
 import dash_bootstrap_components as dbc
 import dash
 import dash_html_components as html
@@ -18,7 +17,7 @@ missions_with_coordinates = pd.read_csv(
 )
 missions_with_coordinates["Date"] = pd.to_datetime(missions_with_coordinates["Date"], format='mixed')
 
-# extract the year
+# extract the year and insert as a column. 
 missions_with_coordinates['year'] = (missions_with_coordinates['Date'].astype(str).str[:4]).astype(int)
 missions_with_coordinates
 
@@ -86,7 +85,7 @@ app.layout = html.Div(
                 "height": "20vh",
             },
         ),
-        dl.Map(
+      dl.Map(
             [
                 dl.TileLayer(url=url, attribution=attribution),
                 dl.MarkerClusterGroup(
@@ -94,7 +93,6 @@ app.layout = html.Div(
                     children=[
                         dl.Marker(
                             position=[row["Latitude"], row["Longitude"]],
-                            # icon  = icon,
                             children=[
                                 dl.Tooltip(
                                     row["Location"],
@@ -112,13 +110,14 @@ app.layout = html.Div(
         html.Div(html.Br()),
         html.Div(html.Br()),
         dcc.RangeSlider(
-            min =  1964,
-            max = 2022,
+            min =  missions_with_coordinates["year"].min(),
+            max =  missions_with_coordinates["year"].max(),
             step = 2,
-            value=[1980, 1981],
+            value=[missions_with_coordinates["year"].min(), missions_with_coordinates["year"].max()],
             tooltip={"placement": "bottom", "always_visible": True},
-            marks={i: {'label': str(i), 'style': {'font-size': '20px'}} for i in range(1964,2022)},
-            id = 'year_slider'
+             marks={str(year): str(year) for year in missions_with_coordinates["year"].unique() if year % 2 == 0 },
+            id = 'year_slider',
+            className='custom-range-slider'
         ),
     ],
     style={
@@ -129,17 +128,31 @@ app.layout = html.Div(
     },
 )
 
-@app.callback(
-    Output('markers', 'figure'), 
-    Input('year_slider', 'value'))
 
-def filter_year(value):
-    df_filtered = missions_with_coordinates.query("year>= @value[0] and year =<@value[1]")
-    
-    # Print the filtered DataFrame
-    return html.Pre(df_filtered.to_string())
+@app.callback(
+    Output(component_id='markers', component_property='children'),
+    Input(component_id='year_slider', component_property='value')
+)
+def update_map_markers(year_range): # have to use the input component property in the function in this case? 
+    start_year, end_year = year_range
+    filtered_missions = missions_with_coordinates.query('year >= @start_year and year <= @end_year')
+
+    filtered_markers = [
+        dl.Marker(
+            position=[row["Latitude"], row["Longitude"]],
+            children=[
+                dl.Tooltip(row["Location"]),
+            ],
+        )
+        for _, row in filtered_missions.iterrows()
+    ]
+
+    return filtered_markers
+
+
 
 
 if __name__ == "__main__":
     app.run_server()
-# %%
+
+#%%
